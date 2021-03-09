@@ -4,7 +4,7 @@
 GPIO_PATH=/sys/class/gpio
 
 # Asignacion de GPIO al led 
-LED=17
+LED=5
 
 # Estados
 ON="1"
