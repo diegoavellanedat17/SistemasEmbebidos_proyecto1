@@ -18,7 +18,8 @@ A continuación se hará un breve resumen de los contenidos del repositorio.
 | ------ | ------ |
 | GPIO C | [/gpio_punto1a.c](https://github.com/diegoavellanedat17/SistemasEmbebidos_proyecto1/blob/main/gpio_punto1a.c) |
 | GPIO Python | [/gpio_punto1b.py](https://github.com/diegoavellanedat17/SistemasEmbebidos_proyecto1/blob/main/gpio_punto1b.py)|
-| GPIO Bash | [/led.sh](https://github.com/diegoavellanedat17/SistemasEmbebidos_proyecto1/blob/main/led.sh)|
+| GPIO Bash 1 | [/gpio_punto1b.py](https://github.com/diegoavellanedat17/SistemasEmbebidos_proyecto1/blob/main/gpio_punto1c.py)|
+| GPIO Bash 2 | [/led.sh](https://github.com/diegoavellanedat17/SistemasEmbebidos_proyecto1/blob/main/led.sh)|
 | OneWire Python | [/temperatura_punto2.py](https://github.com/diegoavellanedat17/SistemasEmbebidos_proyecto1/blob/main/temperatura_punto2.py) |
 | OneWire Bash | [/temp.sh](https://github.com/diegoavellanedat17/SistemasEmbebidos_proyecto1/blob/main/temp.sh) |
 
