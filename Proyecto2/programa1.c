@@ -6,7 +6,7 @@
 int main(){
     //Inicializar el Wiring Pi 5
     const int led = 5;
-    const int tm = 1/200;
+    const int tm = 1;
     // Definir el PIN como OUTPUT
     wiringPiSetup();
     pinMode(led, OUTPUT);
