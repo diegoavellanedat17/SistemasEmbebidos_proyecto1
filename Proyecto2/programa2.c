@@ -1,6 +1,8 @@
+
 #include <stdio.h>
 #include<stdlib.h>
 #include <wiringPi.h>
+#include <unistd.h>
 // Incluir las librerias correspondientes al standard input output y a wiringPi para asignacion de GPIO
 int main(){
     //Inicializar el Wiring Pi 4
@@ -12,9 +14,9 @@ int main(){
     // Ciclo de cambio del PIN
     while (1) {
         digitalWrite(led, HIGH);
-        delay(tm);
+        usleep(tm);
         digitalWrite(led, LOW);
-        delay(tm);
+        usleep(tm);
     }
    return 0;
 }
