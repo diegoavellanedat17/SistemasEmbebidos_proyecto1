@@ -1,6 +1,21 @@
-# SPDX-FileCopyrightText: 2021 ladyada for Adafruit Industries
-# SPDX-License-Identifier: MIT
+## @package Proyecto 2
+# Multi hilos, One-wire, I2C, serial
+# 
+#  @version 1 
+#
+# Pontificia Universidad Javeriana
+# 
+# Ingeniería Electrónicq
+# 
+# Desarrollado por:
+# - Andrea Juliana Ruiz Gomez
+#       Mail: <andrea_ruiz@javeriana.edu.co>
+#       GitHub: andrearuizg
+# - Diego Fernando Avellaneda Torres
+#       Mail: <avellanedad@javeriana.edu.co>
+#       GitHub: diegoavellanedat17
 
+# Declaración de módulos
 import time
 import board
 import busio
@@ -9,88 +24,119 @@ import threading
 import queue
 import numpy as np
 import serial
+import sys 
+import subprocess
 
-i2c = busio.I2C(board.SCL, board.SDA)
+## Temperatura
+# Guarda el valor de la temperatura en un archivo .csv
+def worker1():
+    while True:
+        item = qT.get()
+        #print('Temperatura = ',item)
+        file = open(filename, "a")  # append mode 
+        file.write(item) 
+        file.close() 
+        time.sleep(1)
+        qT.task_done()
 
-# For ADXL345
-accelerometer = adafruit_adxl34x.ADXL345(i2c)
 
-#Inicializamos el puerto de serie a 115200 baud
-ser_1 = serial.Serial('/dev/ttyAMA0', 115200)
-ser_2 = serial.Serial('/dev/ttyUSB0', 115200)
-
-#RP -> SERIAL - PROMEDIO
-#(SERIAL <- RP) -> TRAMA###
-#SERISL - RP - TRAMA ###
-aceleracion = []
-
-qG = queue.Queue()
-qP = queue.Queue()
-qS = queue.Queue()
-def worker():
-    #global qG # no es necesario ya en Py3!
+## Aceleración
+# Muestra el valor de la aceleración en la pantalla
+def worker2():
     while True:
         item = qG.get()
-        #print(f'Aceleracion = ',item)
+        print('Aceleracion = ',item)
         time.sleep(0.2)
         qG.task_done()
 
-def worker2():
-    #global qG # no es necesario ya en Py3!
+
+## Serial - enviar
+# Envía valor por serial
+def worker3():
     while True:
         item = qP.get()
-        print("Hilo 2")
-        #print(f'Aceleracion promedio = ',item)
+        #print("Se envío = ", item)
         ms = str(item)+"\n"
-        print(ms)
         ser_1.write(ms.encode("utf-8"))
-        time.sleep(0.2)
+        time.sleep(0.4)
         qP.task_done()
 
-def worker3():
-    #global qG # no es necesario ya en Py3!
+
+## Serial - recibir
+# Recibe valor por serial
+def worker4():
     while True:
-        #print(f'Aceleracion promedio = ',item)
-        #rd = ser_2.readline()
-        #rd = rd.decode("utf-8")
         item = qS.get()
-        print("hilo 3")
-        print(item)
-        time.sleep(0.2)
+        if (item.startswith("##") and item.endswith("-##")):
+            print("Se recibió = ", item)
+        time.sleep(0.4)
         qS.task_done()
-#str = "##"+PR+"-"+N"-##\n"
 
 
-while True:
-    x = []
-    y = []
-    z = []
+if __name__ == "__main__":
+    # Configuración I2C 
+    i2c = busio.I2C(board.SCL, board.SDA)
 
-    threading.Thread(target=worker, daemon=True).start()
-    N=10
+    # Para ADXL345
+    accelerometer = adafruit_adxl34x.ADXL345(i2c)
 
-    for item in range(N):
-        aceleracion = np.asarray(accelerometer.acceleration)
-        x.append(aceleracion[0])
-        y.append(aceleracion[1])
-        z.append(aceleracion[2])
-        qG.put(aceleracion)
-        time.sleep(0.2)
+    #Inicializamos los puertos del serial a 115200 baud
+    ser_1 = serial.Serial('/dev/ttyAMA0', 115200)
+    ser_2 = serial.Serial('/dev/ttyUSB0', 115200)
 
-    threading.Thread(target=worker2, daemon=True).start()
-    prom = [np.sum(x)/N, np.sum(y)/N, np.sum(z)/N]
-    qP.put(prom)
-    #print(prom)
-    #print(type(prom))
+    # Declaración de aceleración
+    aceleracion = []
 
+    # Declaración de colas
+    qT = queue.Queue()
+    qG = queue.Queue()
+    qP = queue.Queue()
+    qS = queue.Queue()
+    qM = queue.Queue()
 
-    threading.Thread(target=worker3, daemon=True).start()
-    rd_2 = ser_2.readline()
-    rd_2 = rd_2.decode("utf-8")
-    qS.put(rd_2)
+    # Declaración del nombre del archivo donde se va a guardar la temperatura en el formato YYYMMDD_TEMPERATURA.csv
+    filename=subprocess.run(["date","+%Y%m%d_TEMPERATURA.csv"],stdout=subprocess.PIPE,text=True)
+    filename=filename.stdout.rstrip("\n")
 
-    #print("hilo 3")
-    #print(rd)
-    #print('Se terminan de enviar los trabajos a la cola\n', end='')
-    qG.join()
-    #print('Se terminan de realizar los trabajos')
+    # Definir el factor por el que debe dividirse la temperatura
+    TEMP_FACTOR=1000
+
+    while True:
+        # Hilo 1- Guardar temperatura 
+        threading.Thread(target=worker1, daemon=True).start()
+        fecha_dato = subprocess.run(["date","+%Y%m%d %H%M%S"],stdout=subprocess.PIPE,text=True)
+        fecha_dato=fecha_dato.stdout.rstrip("\n")
+        temperatura = subprocess.run(["cat","/sys/bus/w1/devices/28-030797943f92/temperature"],stdout=subprocess.PIPE,text=True)
+        temperatura= str(int(temperatura.stdout)/TEMP_FACTOR)
+        trama_guardar=fecha_dato+' '+temperatura+'\n'
+        qT.put(trama_guardar)
+
+        # Hilo 2 - Mostrar aceleración
+        x = []
+        y = []
+        z = []
+
+        N=10
+
+        for item in range(N):
+            aceleracion = np.around(np.asarray(accelerometer.acceleration), decimals=1)
+            x.append(aceleracion[0])
+            y.append(aceleracion[1])
+            z.append(aceleracion[2])
+            qG.put(aceleracion)
+        threading.Thread(target=worker2, daemon=True).start()
+
+        # Hilo 3 - Enviar promedio por serial
+        prom = np.around([np.sum(x)/N, np.sum(y)/N, np.sum(z)/N], decimals=1)
+        prom_s = "##"+str(prom)+"-"+str(N)+"-##\n"
+        qP.put(prom_s)
+        threading.Thread(target=worker3, daemon=True).start()
+
+        # Hilo 4 - Leer serial
+        rd_2 = ser_2.readline()
+        rd_2 = rd_2.decode("utf-8")
+        rd_2 = rd_2.rstrip("\n")
+        qS.put(rd_2)
+        threading.Thread(target=worker4, daemon=True).start()
+
+        qG.join()
