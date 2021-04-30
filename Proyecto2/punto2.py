@@ -101,6 +101,10 @@ if __name__ == "__main__":
     # Definir el factor por el que debe dividirse la temperatura
     TEMP_FACTOR=1000
 
+    x = []
+    y = []
+    z = []
+
     while True:
         # Hilo 1- Guardar temperatura 
         threading.Thread(target=worker1, daemon=True).start()
@@ -112,24 +116,26 @@ if __name__ == "__main__":
         qT.put(trama_guardar)
 
         # Hilo 2 - Mostrar aceleración
-        x = []
-        y = []
-        z = []
-
         N=10
 
-        for item in range(N):
-            aceleracion = np.around(np.asarray(accelerometer.acceleration), decimals=1)
-            x.append(aceleracion[0])
-            y.append(aceleracion[1])
-            z.append(aceleracion[2])
-            qG.put(aceleracion)
+        #for item in range(N+5):
+        aceleracion = np.around(np.asarray(accelerometer.acceleration), decimals=1)
+        x.append(aceleracion[0])
+        y.append(aceleracion[1])
+        z.append(aceleracion[2])
+        
+        qG.put(aceleracion)
         threading.Thread(target=worker2, daemon=True).start()
 
         # Hilo 3 - Enviar promedio por serial
-        prom = np.around([np.sum(x)/N, np.sum(y)/N, np.sum(z)/N], decimals=1)
-        prom_s = "##"+str(prom)+"-"+str(N)+"-##\n"
-        qP.put(prom_s)
+        if(len(x) > N):
+            prom = np.around([np.sum(x[len(x)-N:len(x)])/N, np.sum(y[len(y)-N:len(y)])/N, np.sum(z[len(z)-N:len(z)])/N], decimals=1)
+            prom_s = "##"+str(prom)+"-"+str(N)+"-##\n"
+            qP.put(prom_s)
+        else: 
+            prom = np.around([np.sum(x)/len(x), np.sum(y)/len(y), np.sum(z)/len(z)], decimals=1)
+            prom_s = "##"+str(prom)+"-"+str(N)+"-##\n"
+            qP.put(prom_s)
         threading.Thread(target=worker3, daemon=True).start()
 
         # Hilo 4 - Leer serial
